@@ -91,5 +91,205 @@
       </ul>
     </details>
   </div>
+
+
+<script>
+(function(){
+  // --- CONFIG: SHA-256 hex of the password "MYC1BOOKS" (already computed) ---
+  const storedHash = "b3d9e3236894691a825385b6caaadf4e1e83da26fdb584a1d2a6e244560002aa";
+
+  // If unlocked this session, do nothing
+  if (sessionStorage.getItem('siteUnlocked') === 'true') return;
+
+  // Create overlay elements (so we don't change your existing HTML)
+  const overlay = document.createElement('div');
+  overlay.id = 'pwProtectOverlay';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.zIndex = '99999';
+  overlay.style.background = 'rgba(18,24,30,0.75)';
+  overlay.style.padding = '20px';
+
+  const box = document.createElement('div');
+  box.style.maxWidth = '420px';
+  box.style.width = '100%';
+  box.style.background = '#ffffff';
+  box.style.padding = '22px';
+  box.style.borderRadius = '10px';
+  box.style.boxShadow = '0 6px 30px rgba(0,0,0,0.35)';
+  box.style.fontFamily = 'Arial, sans-serif';
+  box.style.color = '#2c3e50';
+  box.style.textAlign = 'left';
+
+  const title = document.createElement('h2');
+  title.textContent = 'Enter password to access content';
+  title.style.margin = '0 0 10px';
+  title.style.fontSize = '1.15rem';
+  title.style.fontWeight = '600';
+
+  const instr = document.createElement('p');
+  instr.textContent = 'Type the password. Toggle visibility with the eye icon.';
+  instr.style.margin = '0 0 14px';
+  instr.style.color = '#4a5568';
+  instr.style.fontSize = '0.95rem';
+
+  const row = document.createElement('div');
+  row.style.display = 'flex';
+  row.style.gap = '8px';
+  row.style.alignItems = 'center';
+
+  const wrap = document.createElement('div');
+  wrap.style.position = 'relative';
+  wrap.style.flex = '1';
+
+  const input = document.createElement('input');
+  input.type = 'password';
+  input.id = 'pwProtectInput';
+  input.placeholder = 'Password';
+  input.setAttribute('aria-label','Password');
+  input.style.width = '220px';
+  input.style.padding = '8px 36px 8px 10px';
+  input.style.borderRadius = '8px';
+  input.style.border = '1px solid #d1d5db';
+  input.style.fontSize = '1rem';
+  input.autocomplete = 'off';
+
+  const eyeBtn = document.createElement('button');
+  eyeBtn.type = 'button';
+  eyeBtn.setAttribute('aria-label','Show password');
+  eyeBtn.style.position = 'absolute';
+  eyeBtn.style.right = '8px';
+  eyeBtn.style.top = '50%';
+  eyeBtn.style.transform = 'translateY(-50%)';
+  eyeBtn.style.background = 'transparent';
+  eyeBtn.style.border = 'none';
+  eyeBtn.style.cursor = 'pointer';
+  eyeBtn.style.padding = '6px';
+
+  // simple eye SVGs
+  const eyeOpenSVG = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const eyeClosedSVG = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.86 20.86 0 0 1 4.09-4.94"/><path d="M1 1l22 22"/><path d="M9.88 9.88A3 3 0 0 0 14.12 14.12"/><path d="M14.53 9.47A9 9 0 0 1 22 12s-4 7-11 7a9 9 0 0 1-3.47-.66"/></svg>';
+
+  eyeBtn.innerHTML = eyeOpenSVG;
+
+  const submit = document.createElement('button');
+  submit.type = 'button';
+  submit.textContent = 'Unlock';
+  submit.style.padding = '10px 14px';
+  submit.style.background = '#2980b9';
+  submit.style.color = '#fff';
+  submit.style.border = 'none';
+  submit.style.borderRadius = '8px';
+  submit.style.cursor = 'pointer';
+  submit.style.fontWeight = '600';
+
+  const msg = document.createElement('div');
+  msg.id = 'pwProtectMsg';
+  msg.style.marginTop = '10px';
+  msg.style.color = '#e74c3c';
+  msg.style.minHeight = '20px';
+  msg.setAttribute('aria-live','polite');
+
+  const note = document.createElement('p');
+  note.textContent = 'Session will stay unlocked on this browser tab. (Client-side protection only.)';
+  note.style.marginTop = '12px';
+  note.style.fontSize = '0.85rem';
+  note.style.color = '#6b7280';
+
+  // assemble
+  wrap.appendChild(input);
+  wrap.appendChild(eyeBtn);
+  row.appendChild(wrap);
+  row.appendChild(submit);
+  box.appendChild(title);
+  box.appendChild(instr);
+  box.appendChild(row);
+  box.appendChild(msg);
+  box.appendChild(note);
+  overlay.appendChild(box);
+  document.documentElement.appendChild(overlay);
+
+  // focus input
+  input.focus();
+
+  // eye toggle
+  let showing = false;
+  eyeBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    showing = !showing;
+    if (showing) {
+      input.type = 'text';
+      eyeBtn.setAttribute('aria-label','Hide password');
+      eyeBtn.innerHTML = eyeClosedSVG;
+    } else {
+      input.type = 'password';
+      eyeBtn.setAttribute('aria-label','Show password');
+      eyeBtn.innerHTML = eyeOpenSVG;
+    }
+    input.focus();
+  });
+
+  // enter key submits
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') submit.click();
+  });
+
+  submit.addEventListener('click', async function(){
+    msg.textContent = '';
+    submit.disabled = true;
+    const typed = input.value || '';
+    try {
+      const hashed = await sha256Hex(typed);
+      if (safeCompare(hashed, storedHash)) {
+        sessionStorage.setItem('siteUnlocked','true');
+        document.documentElement.removeChild(overlay);
+      } else {
+        msg.textContent = 'Incorrect password — try again.';
+        input.select();
+        submit.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      msg.textContent = 'Error processing password.';
+      submit.disabled = false;
+    }
+  });
+
+  // small constant-time-ish compare
+  function safeCompare(a,b){
+    if (a.length !== b.length) return false;
+    let res = 0;
+    for (let i=0;i<a.length;i++){
+      res |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return res === 0;
+  }
+
+  // SHA-256 via Web Crypto -> hex
+  async function sha256Hex(str){
+    const enc = new TextEncoder();
+    const data = enc.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const bytes = new Uint8Array(hashBuffer);
+    let hex = '';
+    for (let b of bytes) hex += b.toString(16).padStart(2,'0');
+    return hex;
+  }
+
+  // -- optional: expose computeHash in case you want to verify in console
+  window.computeHash = async function(pw){
+    const h = await sha256Hex(String(pw));
+    console.log('SHA-256 hex:', h);
+    return h;
+  };
+
+})();
+</script>
+
 </body>
 </html>
